@@ -1,1 +1,236 @@
+#Robot Car Built Using Micropython
+from machine import Pin
+import time
+import network
 
+# Define motor pins
+motor1A = Pin(5, Pin.OUT)  # D1
+motor1B = Pin(4, Pin.OUT)  # D2
+motor2A = Pin(0, Pin.OUT)  # D3
+motor2B = Pin(2, Pin.OUT)  # D4
+
+# WiFi Connection
+ssid = "Narzo 50"
+password = "1234567890"
+
+station = network.WLAN(network.STA_IF)
+station.active(True)
+station.connect(ssid, password)
+
+while not station.isconnected():
+    pass
+
+print('Connection successful')
+print(station.ifconfig())
+
+# HTML page
+html = """<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1c1c1c;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            animation: backgroundAnimation 10s infinite alternate;
+        }
+
+        @keyframes backgroundAnimation {
+            0% { background-color: #1c1c1c; }
+            50% { background-color: #333; }
+            100% { background-color: #1c1c1c; }
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            backdrop-filter: blur(10px);
+            animation: fadeIn 1s ease-in-out;
+            display: grid;
+            gap: 20px;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            justify-content: center;
+            align-items: center;
+        }
+
+        h2 {
+            font-size: 2em;
+            animation: slideIn 1s ease-in-out;
+            grid-column: 1 / -1;
+            animation-name: slide;
+        }
+
+        @keyframes slide {
+            0% { transform: translateX(-100%); opacity: 0; }
+            100% { transform: translateX(0); opacity: 1; }
+        }
+
+        .button {
+            background: linear-gradient(45deg, #4CAF50, #008CBA);
+            border: none;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            text-decoration: none;
+            display: block;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            animation: popIn 0.5s ease-in-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .button::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -75%;
+            width: 50%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: skewX(-45deg);
+            transition: left 0.5s ease;
+        }
+
+        .button:hover::before {
+            left: 150%;
+        }
+
+        .button:hover {
+            background: linear-gradient(45deg, #008CBA, #4CAF50);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .top {
+            grid-column: 2;
+            grid-row: 1;
+        }
+
+        .left {
+            grid-column: 1;
+            grid-row: 2;
+        }
+
+        .center {
+            grid-column: 2;
+            grid-row: 2;
+        }
+
+        .right {
+            grid-column: 3;
+            grid-row: 2;
+        }
+
+        .bottom {
+            grid-column: 2;
+            grid-row: 3;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>ESP8266 Robot Car</h2>
+        <button class="button top" onclick="sendData('F')">▲</button>
+        <button class="button left" onclick="sendData('L')">◄</button>
+        <button class="button center" onclick="sendData('S')">Stop</button>
+        <button class="button right" onclick="sendData('R')">►</button>
+        <button class="button bottom" onclick="sendData('B')">▼</button>
+    </div>
+    <script>
+        function sendData(cmd) {
+            var xhttp = new XMLHttpRequest();
+            xhttp.open("GET", "/command?cmd=" + cmd, true);
+            xhttp.send();
+        }
+    </script>
+</body>
+</html>
+
+"""
+
+def web_page():
+    return html
+
+import socket
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.bind(('', 80))
+s.listen(5)
+
+while True:
+    conn, addr = s.accept()
+    print('Got a connection from %s' % str(addr))
+    request = conn.recv(1024)
+    request = str(request)
+    print('Content = %s' % request)
+    cmd = request.find('/command?cmd=')
+    if cmd == 6:
+        command = request.split('cmd=')[1].split(' ')[0]
+        print(f"Command received: {command}")
+        if command == 'F':
+            motor1A.on()
+            motor1B.off()
+            motor2A.on()
+            motor2B.off()
+            print("Moving forward")
+        elif command == 'B':
+            motor1A.off()
+            motor1B.on()
+            motor2A.off()
+            motor2B.on()
+            print("Moving backward")
+        elif command == 'L':
+            motor1A.off()
+            motor1B.on()
+            motor2A.on()
+            motor2B.off()
+            print("Turning left")
+        elif command == 'R':
+            motor1A.on()
+            motor1B.off()
+            motor2A.off()
+            motor2B.on()
+            print("Turning right")
+        elif command == 'S':
+            motor1A.off()
+            motor1B.off()
+            motor2A.off()
+            motor2B.off()
+            print("Stopping")
+    response = web_page()
+    conn.send('HTTP/1.1 200 OK\n')
+    conn.send('Content-Type: text/html\n')
+    conn.send('Connection: close\n\n')
+    conn.sendall(response)
+    conn.close()

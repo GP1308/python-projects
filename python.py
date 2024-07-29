@@ -1,44 +1,61 @@
+import tkinter as tk
+from tkinter import simpledialog, messagebox
+
 tasks = []
 
 # Function to display menu
 def display_menu():
- print("1. Add Task")
- print("2. View Tasks")
- print("3. Delete Task")
- print("4. Quit")
+    menu_frame.pack()
+    task_frame.pack_forget()
 
 # Function to add a task
 def add_task():
- task = input("Enter a task: ")
- tasks.append(task)
- print("Task added!")
+    task = simpledialog.askstring("Add Task", "Enter a task:")
+    if task:
+        tasks.append(task)
+        messagebox.showinfo("Task Manager", "Task added!")
+        view_tasks()
 
 # Function to view tasks
 def view_tasks():
- print("Tasks:")
- for i, task in enumerate(tasks, 1):
-  print(f"{i}. {task}")
+    menu_frame.pack_forget()
+    task_frame.pack()
+    task_list.delete(0, tk.END)
+    for i, task in enumerate(tasks, 1):
+        task_list.insert(tk.END, f"{i}. {task}")
 
 # Function to delete a task
 def delete_task():
- task_number = int(input("Enter the task number to delete: "))
- if task_number > 0 and task_number <= len(tasks):
-  tasks.pop(task_number - 1)
-  print("Task deleted!")
- else:
-  print("Invalid task number!")
+    selected_task_index = task_list.curselection()
+    if selected_task_index:
+        task_number = selected_task_index[0]
+        tasks.pop(task_number)
+        messagebox.showinfo("Task Manager", "Task deleted!")
+        view_tasks()
+    else:
+        messagebox.showwarning("Task Manager", "No task selected!")
 
-# Main loop
-while True:
- display_menu()
- choice = input("Choose an option: ")
- if choice == "1":
-  add_task()
- elif choice == "2":
-  view_tasks()
- elif choice == "3":
-  delete_task()
- elif choice == "4":
-  break
- else:
-  print("Invalid choice!")
+def quit_program():
+    root.destroy()
+
+# Create main window
+root = tk.Tk()
+root.title("Task Manager")
+
+# Menu frame
+menu_frame = tk.Frame(root)
+tk.Button(menu_frame, text="Add Task", command=add_task).pack(fill=tk.BOTH, expand=True)
+tk.Button(menu_frame, text="View Tasks", command=view_tasks).pack(fill=tk.BOTH, expand=True)
+tk.Button(menu_frame, text="Quit", command=quit_program).pack(fill=tk.BOTH, expand=True)
+
+# Task frame
+task_frame = tk.Frame(root)
+task_list = tk.Listbox(task_frame)
+task_list.pack(fill=tk.BOTH, expand=True)
+tk.Button(task_frame, text="Delete Task", command=delete_task).pack(fill=tk.BOTH, expand=True)
+tk.Button(task_frame, text="Back to Menu", command=display_menu).pack(fill=tk.BOTH, expand=True)
+
+# Start with the menu frame
+display_menu()
+
+root.mainloop()
